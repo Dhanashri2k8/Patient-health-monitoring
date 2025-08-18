@@ -169,47 +169,49 @@ def load_history(username):
 
 # Email alert
 def get_email_credentials():
-    # Try environment variables first
-    sender = st.secrets["EMAIL_SENDER"]
-    app_pw = st.secrets["EMAIL_PASSWORD"]
-    if sender and app_pw:
-        return sender, app_pw
-    # Fallback for demo (⚠ for real use, set env vars instead)
-    fallback_sender = "jadhavdhanashri0602@gmail.com"
-    fallback_pw = "qoxg peuy nkwo crcx"  # Gmail App Password
-    return fallback_sender, fallback_pw
+    # Try env vars first, then Streamlit secrets
+    sender = os.getenv("EMAIL_SENDER") or (st.secrets.get("EMAIL_SENDER") if hasattr(st, "secrets") else None)
+    app_pw = os.getenv("EMAIL_PASSWORD") or (st.secrets.get("EMAIL_PASSWORD") if hasattr(st, "secrets") else None)
+
+    # (Optional) LAST resort hardcoded fallback — not recommended for real projects
+    if not sender or not app_pw:
+        # fill ONLY for local testing, otherwise keep as None
+        # sender = "you@example.com"
+        # app_pw = "your-app-password"
+        pass
+
+    return sender, app_pw
 
 def send_email_alert(patient_data: dict, receiver_email: str):
     sender_email, sender_password = get_email_credentials()
     if not sender_email or not sender_password:
-        st.error("Email credentials not configured. Set EMAIL_SENDER and EMAIL_PASSWORD env vars or fill fallback in code.")
+        st.error("Email credentials not configured. Set EMAIL_SENDER and EMAIL_PASSWORD via env vars or Streamlit secrets.")
         return False
 
-    # ✅ Plain subject (no emojis)
+    # Plain ASCII subject/body (remove emojis)
     subject = "High Risk Patient Alert"
 
-    # Build email body
     body_lines = ["ALERT: High Risk detected", "", "Patient details:"]
     for k, v in patient_data.items():
-        val = str(v)
-        # Remove any emojis or weird characters
-        val = val.encode("ascii", "ignore").decode("ascii")
+        # stringify and strip any non-ascii just in case
+        val = str(v).encode("ascii", "ignore").decode("ascii")
         body_lines.append(f"{k}: {val}")
     body = "\n".join(body_lines)
 
-    # ✅ Force ASCII-safe body
-    body = body.encode("ascii", "ignore").decode("ascii")
-
-    # Create the email (pure ASCII)
-    msg = MIMEText(body, "plain", "utf-8")
+    # Build a clean UTF-8 email
+    msg = MIMEMultipart()
     msg["Subject"] = Header(subject, "utf-8")
     msg["From"] = sender_email
     msg["To"] = receiver_email
 
+    text_part = MIMEText(body, _subtype="plain", _charset="utf-8")
+    msg.attach(text_part)
+
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender_email, sender_password)
-            server.sendmail(sender_email, receiver_email, msg.as_string())
+            # ✅ send as bytes to avoid any implicit ascii re-encoding
+            server.sendmail(sender_email, receiver_email, msg.as_bytes())
         return True
     except Exception as e:
         st.error(f"Failed to send email: {e}")
@@ -493,4 +495,5 @@ elif menu == "About":
     - Uses trained ML model file: health_model.pkl
 
     """)
+
 
