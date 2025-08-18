@@ -185,20 +185,25 @@ def send_email_alert(patient_data: dict, receiver_email: str):
         st.error("Email credentials not configured. Set EMAIL_SENDER and EMAIL_PASSWORD env vars or fill fallback in code.")
         return False
 
-    subject = "🚨 High Risk Patient Alert"
+    subject = "High Risk Patient Alert"
+
+    # Build email body
     body_lines = ["ALERT: High Risk detected", "", "Patient details:"]
     for k, v in patient_data.items():
         body_lines.append(f"{k}: {v}")
     body = "\n".join(body_lines)
 
-    # Create the email
+    # 🔑 Fix hidden characters and emojis
+    body = body.replace("\xa0", " ")  # remove non-breaking spaces
+    body = body.encode("utf-8", "ignore").decode("utf-8")  # force utf-8 safe
+
+    # Create the email (UTF-8 safe)
     msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = Header(subject, "utf-8")
     msg["From"] = sender_email
     msg["To"] = receiver_email
 
     try:
-        # SSL port for Gmail
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender_email, sender_password)
             server.sendmail(sender_email, receiver_email, msg.as_string())
@@ -483,4 +488,5 @@ elif menu == "About":
     - Per-user history saved locally (history_<username>.csv)
     - Email alerts to caretaker email configured during signup (Gmail App Password recommended)
     - Uses trained ML model file: health_model.pkl
+
     """)
