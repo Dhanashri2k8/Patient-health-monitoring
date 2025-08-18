@@ -185,19 +185,22 @@ def send_email_alert(patient_data: dict, receiver_email: str):
         st.error("Email credentials not configured. Set EMAIL_SENDER and EMAIL_PASSWORD env vars or fill fallback in code.")
         return False
 
+    # ✅ Plain subject (no emojis)
     subject = "High Risk Patient Alert"
 
     # Build email body
     body_lines = ["ALERT: High Risk detected", "", "Patient details:"]
     for k, v in patient_data.items():
-        body_lines.append(f"{k}: {v}")
+        val = str(v)
+        # Remove any emojis or weird characters
+        val = val.encode("ascii", "ignore").decode("ascii")
+        body_lines.append(f"{k}: {val}")
     body = "\n".join(body_lines)
 
-    # 🔑 Fix hidden characters and emojis
-    body = body.replace("\xa0", " ")  # remove non-breaking spaces
-    body = body.encode("utf-8", "ignore").decode("utf-8")  # force utf-8 safe
+    # ✅ Force ASCII-safe body
+    body = body.encode("ascii", "ignore").decode("ascii")
 
-    # Create the email (UTF-8 safe)
+    # Create the email (pure ASCII)
     msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = Header(subject, "utf-8")
     msg["From"] = sender_email
@@ -490,3 +493,4 @@ elif menu == "About":
     - Uses trained ML model file: health_model.pkl
 
     """)
+
