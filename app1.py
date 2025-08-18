@@ -271,6 +271,14 @@ elif menu == "Login":
             else:
                 st.error("Incorrect password.")
 
+if st.button("Test Email"):
+    test_data = {"Heart Rate": 120, "Oxygen Saturation": 88}  # example data
+    result = send_email_alert(test_data, "yourfriend@gmail.com")  # put any email
+    if result:
+        st.success("✅ Test email sent successfully!")
+    else:
+        st.error("❌ Email failed. Check credentials or App Password.")
+        
 # ---------- MAIN APP (after login) ----------
 if "user" in st.session_state:
     username = st.session_state["user"]
@@ -489,6 +497,7 @@ elif menu == "About":
     - Uses trained ML model file: health_model.pkl
 
     """)
+
 
 
 
