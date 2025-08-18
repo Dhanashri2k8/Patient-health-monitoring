@@ -170,9 +170,9 @@ def load_history(username):
 # Email alert
 def get_email_credentials():
     # Try env vars first, then Streamlit secrets
-    sender = os.getenv("EMAIL_SENDER") or (st.secrets.get("EMAIL_SENDER") if hasattr(st, "secrets") else None)
-    app_pw = os.getenv("EMAIL_PASSWORD") or (st.secrets.get("EMAIL_PASSWORD") if hasattr(st, "secrets") else None)
-
+    sender = st.secrets.get("EMAIL_SENDER")
+    app_pw = st.secrets.get("EMAIL_PASSWORD")
+    return sender, app_pw
     # (Optional) LAST resort hardcoded fallback — not recommended for real projects
     if not sender or not app_pw:
         # fill ONLY for local testing, otherwise keep as None
@@ -185,33 +185,27 @@ def get_email_credentials():
 def send_email_alert(patient_data: dict, receiver_email: str):
     sender_email, sender_password = get_email_credentials()
     if not sender_email or not sender_password:
-        st.error("Email credentials not configured. Set EMAIL_SENDER and EMAIL_PASSWORD via env vars or Streamlit secrets.")
+        st.error("Email credentials not configured in Streamlit Secrets.")
         return False
 
-    # Plain ASCII subject/body (remove emojis)
     subject = "High Risk Patient Alert"
 
+    # Body
     body_lines = ["ALERT: High Risk detected", "", "Patient details:"]
     for k, v in patient_data.items():
-        # stringify and strip any non-ascii just in case
-        val = str(v).encode("ascii", "ignore").decode("ascii")
-        body_lines.append(f"{k}: {val}")
+        body_lines.append(f"{k}: {v}")
     body = "\n".join(body_lines)
 
-    # Build a clean UTF-8 email
     msg = MIMEMultipart()
     msg["Subject"] = Header(subject, "utf-8")
     msg["From"] = sender_email
     msg["To"] = receiver_email
-
-    text_part = MIMEText(body, _subtype="plain", _charset="utf-8")
-    msg.attach(text_part)
+    msg.attach(MIMEText(body, "plain", "utf-8"))
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender_email, sender_password)
-            # ✅ send as bytes to avoid any implicit ascii re-encoding
-            server.sendmail(sender_email, receiver_email, msg.as_bytes())
+            server.sendmail(sender_email, receiver_email, msg.as_string())
         return True
     except Exception as e:
         st.error(f"Failed to send email: {e}")
@@ -495,5 +489,6 @@ elif menu == "About":
     - Uses trained ML model file: health_model.pkl
 
     """)
+
 
 
