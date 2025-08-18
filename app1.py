@@ -181,7 +181,7 @@ def get_email_credentials():
         pass
 
     return sender, app_pw
-
+st.write("DEBUG EMAIL:", st.secrets.get("EMAIL_SENDER"))
 def send_email_alert(patient_data: dict, receiver_email: str):
     sender_email, sender_password = get_email_credentials()
     if not sender_email or not sender_password:
@@ -489,6 +489,7 @@ elif menu == "About":
     - Uses trained ML model file: health_model.pkl
 
     """)
+
 
 
 
