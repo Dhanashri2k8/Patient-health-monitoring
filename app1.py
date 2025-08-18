@@ -273,7 +273,7 @@ elif menu == "Login":
 
 if st.button("Test Email"):
     test_data = {"Heart Rate": 120, "Oxygen Saturation": 88}  # example data
-    result = send_email_alert(test_data, "yourfriend@gmail.com")  # put any email
+    result = send_email_alert(test_data, "chaitralipatil1227@gmail.com")  # put any email
     if result:
         st.success("✅ Test email sent successfully!")
     else:
@@ -497,6 +497,7 @@ elif menu == "About":
     - Uses trained ML model file: health_model.pkl
 
     """)
+
 
 
 
